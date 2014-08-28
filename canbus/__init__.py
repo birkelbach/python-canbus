@@ -23,7 +23,7 @@ import serial
 import threading
 import Queue
 import time
-import config
+import canutil
 
 # Import and add each Adapter class from the files.  There may be a way
 # to do this in a loop but for now this will work.
@@ -40,7 +40,7 @@ def getSerialPortList():
     # Scan for available ports.
     available = []
     
-    for i in config.portlist:
+    for i in canutil.portlist:
         try:
             s = serial.Serial(i)
             available.append(s.portstr)
