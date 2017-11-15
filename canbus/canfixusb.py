@@ -1,4 +1,4 @@
-#  CAN-FIX Utilities - An Open Source CAN FIX Utility Package 
+#  CAN-FIX Utilities - An Open Source CAN FIX Utility Package
 #  Copyright (c) 2013 Phil Birkelbach
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -15,11 +15,10 @@
 #  along with this program; if not, write to the Free Software
 #  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
-from exceptions import *
+from .exceptions import *
 import serial
 import time
-import canbus
-#from serial.tools.list_ports import comports
+from . import cantypes
 
 class Adapter():
     """Class that represents an the Open Source CAN-FIX-it USB to CANBus adapter"""
@@ -28,24 +27,18 @@ class Adapter():
         self.shortname = "canfixusb"
         self.type = "serial"
         self.ser = None
-        self.sentFrames = 0
-        self.recvFrames = 0
-        
+
     def __readResponse(self, ch):
         s = ""
 
         while 1:
-            try:
-                x = self.ser.read()
-            except serial.SerialException:
-                pass
+            x = self.ser.read()
             if len(x) == 0:
                 raise DeviceTimeout
             else:
                 s = s + x
                 if x == '\n':
                     if s[0] == ch.lower(): # Good Response
-                        print "__readResponse()", s, 
                         return s
                     if s[0] == "*": # Error
                         raise BusReadError("Error " + s[1] + " Returned")
@@ -54,9 +47,8 @@ class Adapter():
         n = 0 #attempt counter
         if command[-1] != '\n':
             command = command + '\n'
-        
+
         while True:
-            print "__sendCommand", command
             self.ser.write(command)
             try:
                 result = self.__readResponse(command[0])
@@ -69,8 +61,8 @@ class Adapter():
                     raise BusReadError("Unable to send Command " + command)
                 time.sleep(self.timeout)
             n+=1
-        
-        
+
+
     def connect(self, config):
         try:
             self.bitrate = config.bitrate
@@ -81,32 +73,32 @@ class Adapter():
             self.portname = config.device
         except KeyError:
             self.portname = comports[0][0]
-            print "Setting Port to default" + self.portname
+            print("Setting Port to default" + self.portname)
         try:
             self.timeout = config.timeout
         except KeyError:
             self.timeout = 0.25
-        
+
         try:
             self.ser = serial.Serial(self.portname, 115200, timeout=self.timeout)
-            
-            print "Reseting CAN-FIX-it"
+
+            print("Reseting CAN-FIX-it")
             self.__sendCommand("K")
-            print "Setting Bit Rate"
+            print("Setting Bit Rate")
             self.__sendCommand(bitrates[self.bitrate])
             self.open()
         except BusReadError:
-            raise BusInitError("Unable to Initialize CAN Port")
-    
+            raise BussInitError("Unable to Initialize CAN Port")
+
     def disconnect(self):
         self.close()
 
     def open(self):
-        print "Opening CAN Port"
+        print("Opening CAN Port")
         self.__sendCommand("O")
-        
+
     def close(self):
-        print "Closing CAN Port"
+        print("Closing CAN Port")
         self.__sendCommand("C")
 
     def error(self):
@@ -128,17 +120,16 @@ class Adapter():
         for each in frame.data:
             xmit = xmit + '%02X' % each
         xmit = xmit + '\n'
-        #self.__sendCommand(xmit)
-        self.sentFrames += 1
+        self.__sendCommand(xmit)
 
     def recvFrame(self):
         result = self.__readResponse("R")
-        
+
         if result[0] != 'r':
             raise BusReadError("Unknown response from Adapter")
         data= []
         for n in range((len(result)-5)/2):
             data.append(int(result[5+n*2:7+n*2], 16))
-        frame = canbus.Frame(int(result[1:4], 16), data)
-        self.recvFrames += 1
+        frame = cantypes.Frame(int(result[1:4], 16), data)
+        #print frame
         return frame

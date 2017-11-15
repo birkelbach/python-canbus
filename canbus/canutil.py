@@ -17,8 +17,8 @@
 #  along with this program; if not, write to the Free Software
 #  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
-# This file is for user configuration information.  Some data is automatically
-# generated but can be overridden by the user if necessary.
+# This file contains utiltiy functions for the module.  Some data is 
+# automatically generated but can be overridden by the user if necessary.
 
 import glob
 import platform
